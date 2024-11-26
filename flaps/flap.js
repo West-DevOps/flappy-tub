@@ -2,22 +2,27 @@ const canvas = document.getElementById('gameCanvas');
 const ctx = canvas.getContext('2d');
 const gameOverScreen = document.getElementById('gameOverScreen');
 const finalScore = document.getElementById('finalScore');
+const characterSelection = document.getElementById('characterSelection');
 
-let scale, bird, pipes, clouds, groundOffset, score, pipeSpeed, groundSpeed, pipeGap, frames, gameOver;
+let scale, bird, pipes, score, pipeSpeed, pipeGap, frames, gameOver, selectedCharacter, waterY, waterSpeed, waveOffset, extraCollision;
 
 const config = {
-    bird: { radius: 15, gravity: 0.16, jump: -5 },
-    pipes: { width: 70, gap: 200, initialSpeed: 2 },
-    ground: { height: 50 },
+    bird: { radius: 50, gravity: 0.16, jump: -5 },
+    pipes: { width: 70, gap: 200, initialSpeed: 2, color: 'LimeGreen' },
+    ground: { height: 40 },
     difficulty: { gapReduction: 10, speedIncrement: 0.2 },
-    colors: {
-        backgroundGradient: ['#87ceeb', '#70c5ce'],
-        pipe: '#4caf50',
-        ground: '#6b8e23',
-        cloud: 'rgba(255, 255, 255, 0.8)',
-        bird: { start: 'yellow', end: 'orange' },
-    },
+    water: { speed: 0.5, amplitude: 5, frequency: 0.02, color: 'SteelBlue' },
+    extraCollision: {
+        size: 60,
+        speed: 3,
+        image: new Image()
+    }
 };
+
+config.extraCollision.image.src = 'C:/Users/sesa327789/Desktop/tub.jpg';
+
+backgroundImage = new Image();
+backgroundImage.src = 'C:/Users/sesa327789/Desktop/background.jpg';
 
 function initCanvas() {
     const aspectRatio = 3 / 4;
@@ -29,74 +34,68 @@ function initCanvas() {
         canvas.width = window.innerHeight * aspectRatio;
     }
     scale = canvas.width / 480;
+    waterY = canvas.height - config.ground.height * scale;
 }
 
 function resetGame() {
-    bird = { x: 50 * scale, y: canvas.height / 2, radius: config.bird.radius * scale, velocity: 0, gravity: config.bird.gravity * scale, jump: config.bird.jump * scale };
+    bird = {
+        x: 50 * scale,
+        y: canvas.height / 2,
+        radius: config.bird.radius * scale,
+        velocity: 0,
+        gravity: config.bird.gravity * scale,
+        jump: config.bird.jump * scale
+    };
     pipes = [];
-    clouds = [];
-    groundOffset = 0;
     score = 0;
     pipeSpeed = config.pipes.initialSpeed * scale;
-    groundSpeed = config.pipes.initialSpeed * scale;
     pipeGap = config.pipes.gap * scale;
     frames = 0;
     gameOver = false;
+    waterSpeed = config.water.speed * scale;
+    waveOffset = 0;
+    extraCollision = null;
     document.getElementById('score').innerText = 'Score: 0';
 }
 
 function drawBackground() {
-    const gradient = ctx.createLinearGradient(0, 0, 0, canvas.height);
-    gradient.addColorStop(0, config.colors.backgroundGradient[0]);
-    gradient.addColorStop(1, config.colors.backgroundGradient[1]);
-    ctx.fillStyle = gradient;
-    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    ctx.drawImage(backgroundImage, 0, 0, canvas.width, canvas.height);
 }
 
-function drawGround() {
-    groundOffset -= groundSpeed;
-    if (groundOffset <= -canvas.width) groundOffset = 0;
+function drawWater() {
+    ctx.fillStyle = config.water.color;
 
-    ctx.fillStyle = config.colors.ground;
-    ctx.fillRect(groundOffset, canvas.height - config.ground.height * scale, canvas.width, config.ground.height * scale);
-    ctx.fillRect(groundOffset + canvas.width, canvas.height - config.ground.height * scale, canvas.width, config.ground.height * scale);
-}
+    ctx.beginPath();
+    ctx.moveTo(0, canvas.height);
 
-function addCloud() {
-    clouds.push({ x: canvas.width, y: Math.random() * 150 * scale + 20 * scale, size: Math.random() * 40 * scale + 40 * scale, speed: Math.random() * 0.5 * scale + 0.2 * scale });
-}
+    for (let x = 0; x < canvas.width; x++) {
+        const y = waterY + config.water.amplitude * scale * Math.sin(config.water.frequency * x + waveOffset);
+        ctx.lineTo(x, y);
+    }
 
-function drawClouds() {
-    clouds.forEach(cloud => {
-        ctx.fillStyle = config.colors.cloud;
-        ctx.beginPath();
-        ctx.arc(cloud.x, cloud.y, cloud.size * 0.6, Math.PI * 0.5, Math.PI * 1.5);
-        ctx.arc(cloud.x + cloud.size * 0.4, cloud.y - cloud.size * 0.4, cloud.size * 0.5, Math.PI, Math.PI * 1.85);
-        ctx.arc(cloud.x + cloud.size * 0.8, cloud.y - cloud.size * 0.2, cloud.size * 0.4, Math.PI * 1.37, Math.PI * 1.91);
-        ctx.arc(cloud.x + cloud.size, cloud.y, cloud.size * 0.6, Math.PI * 1.5, Math.PI * 0.5);
-        ctx.closePath();
-        ctx.fill();
-        cloud.x -= cloud.speed;
-    });
-    clouds = clouds.filter(cloud => cloud.x > -cloud.size);
-}
+    ctx.lineTo(canvas.width, canvas.height);
+    ctx.closePath();
+    ctx.fill();
 
-function addPipe() {
-    const pipeHeight = Math.random() * (canvas.height - pipeGap - 100 * scale) + 50 * scale;
-    pipes.push({ x: canvas.width, topHeight: pipeHeight, bottomHeight: canvas.height - pipeHeight - pipeGap });
+    waveOffset += waterSpeed;
+
+    const waterSurfaceY = waterY + config.water.amplitude * scale * Math.sin(config.water.frequency * bird.x + waveOffset);
+    if (bird.y + bird.radius > waterSurfaceY) {
+        gameOver = true;
+    }
 }
 
 function drawPipes() {
     pipes.forEach(pipe => {
         pipe.x -= pipeSpeed;
-        ctx.fillStyle = config.colors.pipe;
+
+        ctx.fillStyle = config.pipes.color;
         ctx.fillRect(pipe.x, 0, config.pipes.width * scale, pipe.topHeight);
-        ctx.fillRect(pipe.x, canvas.height - pipe.bottomHeight, config.pipes.width * scale, pipe.bottomHeight);
 
         if (
             bird.x + bird.radius > pipe.x &&
             bird.x - bird.radius < pipe.x + config.pipes.width * scale &&
-            (bird.y - bird.radius < pipe.topHeight || bird.y + bird.radius > canvas.height - pipe.bottomHeight)
+            (bird.y - bird.radius < pipe.topHeight)
         ) {
             gameOver = true;
         }
@@ -105,32 +104,42 @@ function drawPipes() {
             pipe.passed = true;
             score++;
             document.getElementById('score').innerText = `Score: ${score}`;
-            if (score % 5 === 0) {
-                pipeSpeed += config.difficulty.speedIncrement * scale;
-                groundSpeed += config.difficulty.speedIncrement * scale;
-                if (pipeGap > 120 * scale) pipeGap -= config.difficulty.gapReduction * scale;
-            }
         }
     });
+
     pipes = pipes.filter(pipe => pipe.x > -config.pipes.width * scale);
 }
 
-function drawBird() {
-    const gradient = ctx.createRadialGradient(bird.x, bird.y, bird.radius / 2, bird.x, bird.y, bird.radius);
-    gradient.addColorStop(0, config.colors.bird.start);
-    gradient.addColorStop(1, config.colors.bird.end);
-    ctx.fillStyle = gradient;
-    ctx.beginPath();
-    ctx.arc(bird.x, bird.y, bird.radius, 0, Math.PI * 2);
-    ctx.fill();
+function drawExtraCollision() {
+    if (extraCollision) {
+        ctx.drawImage(config.extraCollision.image, extraCollision.x - config.extraCollision.size * scale / 2, extraCollision.y - config.extraCollision.size * scale / 2, config.extraCollision.size * scale, config.extraCollision.size * scale);
+        extraCollision.x -= config.extraCollision.speed * scale;
+
+        const distX = bird.x - extraCollision.x;
+        const distY = bird.y - extraCollision.y;
+        const distance = Math.sqrt(distX * distX + distY * distY);
+        if (distance < bird.radius + config.extraCollision.size * scale / 2) {
+            gameOver = true;
+        }
+
+        if (extraCollision.x < -config.extraCollision.size * scale) {
+            extraCollision = null;
+        }
+    }
 }
 
-function updateBird() {
-    bird.velocity += bird.gravity;
-    bird.y += bird.velocity;
-    if (bird.y + bird.radius > canvas.height - config.ground.height * scale || bird.y - bird.radius < 0) {
-        gameOver = true;
-    }
+function drawBird() {
+    const birdImage = new Image();
+    birdImage.src = selectedCharacter;
+    ctx.drawImage(birdImage, bird.x - bird.radius, bird.y - bird.radius, bird.radius * 2, bird.radius * 2);
+}
+
+function addPipe() {
+    const pipeHeight = Math.random() * (canvas.height - pipeGap - 100 * scale) + 50 * scale;
+    pipes.push({
+        x: canvas.width,
+        topHeight: pipeHeight,
+    });
 }
 
 function gameLoop() {
@@ -143,34 +152,47 @@ function gameLoop() {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
 
     drawBackground();
-    drawClouds();
-    drawGround();
     drawBird();
     drawPipes();
-    updateBird();
+    drawWater();
 
-    if (frames % 250 === 0) addCloud();
+    bird.velocity += bird.gravity;
+    bird.y += bird.velocity;
+
     if (frames % 160 === 0) addPipe();
 
+    if (frames % 300 === 0 && extraCollision === null) {
+        extraCollision = {
+            x: canvas.width,
+            y: Math.random() * (canvas.height - config.ground.height * scale - config.extraCollision.size * scale) + config.extraCollision.size * scale / 2
+        };
+    }
+
+    drawExtraCollision();
+
     frames++;
+
     requestAnimationFrame(gameLoop);
 }
+
+characterSelection.style.display = 'flex';
+document.querySelectorAll('.characterOption').forEach(option => {
+    option.addEventListener('click', (e) => {
+        selectedCharacter = e.target.getAttribute('data-character');
+        characterSelection.style.display = 'none';
+        canvas.style.display = 'block';
+        initCanvas();
+        resetGame();
+        gameLoop();
+    });
+});
+
+document.addEventListener('click', () => {
+    if (!gameOver) bird.velocity = bird.jump;
+});
 
 function restartGame() {
     gameOverScreen.style.display = 'none';
     resetGame();
     gameLoop();
 }
-
-document.addEventListener('click', () => {
-    if (!gameOver) bird.velocity = bird.jump;
-});
-
-window.addEventListener('resize', () => {
-    initCanvas();
-    restartGame();
-});
-
-initCanvas();
-resetGame();
-gameLoop();
