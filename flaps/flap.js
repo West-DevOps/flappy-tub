@@ -19,10 +19,10 @@ const config = {
     }
 };
 
-config.extraCollision.image.src = 'C:/Users/sesa327789/Desktop/tub.jpg';
+config.extraCollision.image.src = 'tub.jpg';
 
 backgroundImage = new Image();
-backgroundImage.src = 'C:/Users/sesa327789/Desktop/background.jpg';
+backgroundImage.src = 'background.jpg';
 
 function initCanvas() {
     const aspectRatio = 3 / 4;
