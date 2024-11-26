@@ -1,3 +1,5 @@
+/*jshint esversion: 6 */
+
 const canvas = document.getElementById('gameCanvas');
 const ctx = canvas.getContext('2d');
 const gameOverScreen = document.getElementById('gameOverScreen');
@@ -21,7 +23,7 @@ const config = {
 
 config.extraCollision.image.src = 'tub.jpg';
 
-backgroundImage = new Image();
+const backgroundImage = new Image();
 backgroundImage.src = 'background.jpg';
 
 function initCanvas() {
