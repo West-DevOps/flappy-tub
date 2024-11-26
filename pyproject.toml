@@ -6,9 +6,13 @@ authors = ["Ben West <ben.west.500@gmail.com>"]
 license = "GNU GPL v3"
 readme = "README.md"
 
+[tool.poetry.scripts]
+run = "server.server:run"
+
 [tool.poetry.dependencies]
 python = "^3.12"
 fastapi = "^0.115.5"
+uvicorn = "^0.32.1"
 
 [tool.poetry.group.dev.dependencies]
 pytest = "^8.3.3"

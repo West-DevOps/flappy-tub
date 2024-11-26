@@ -64,6 +64,13 @@
         }
     </style>
 </head>
+<body>
+<div id="score">Score: 0</div>
+<div id="gameOverScreen">
+    <div id="finalScore">Your Score: 0</div>
+    <button onclick="restartGame()">Try Again</button>
+</div>
+<canvas id="gameCanvas"></canvas>
 <script>
     const canvas = document.getElementById('gameCanvas');
     const ctx = canvas.getContext('2d');
@@ -242,12 +249,5 @@
     resetGame();
     gameLoop();
 </script>
-<body>
-<div id="score">Score: 0</div>
-<div id="gameOverScreen">
-    <div id="finalScore">Your Score: 0</div>
-    <button onclick="restartGame()">Try Again</button>
-</div>
-<canvas id="gameCanvas"></canvas>
 </body>
 </html>

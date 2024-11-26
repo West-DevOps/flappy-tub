@@ -4,5 +4,4 @@ from fastapi.staticfiles import StaticFiles
 
 app = FastAPI()
 
-app.mount("/flap", StaticFiles(directory="flaps"), name="flappy-tub")
-
+app.mount("/", StaticFiles(directory="flaps"), name="flappy-tub")

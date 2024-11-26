@@ -3,5 +3,7 @@ A game about hot tubs and hard flaps
 
 ## Running 
 
+`cd flappy-tub`
+`pip install poetry`
 `poetry install`
-`fastapi dev server/server.py`
+`uvicorn server.server:app`
